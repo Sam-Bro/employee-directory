@@ -1,60 +1,81 @@
-import React, { useState, useRef, useEffect } from "react";
-import EmployeeList from "./EmployeeList";
-import { v4 as uuidv4 } from "uuid";
-//import Employee from "./Employee";
+import React, { Component } from "react";
+import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
+import injectTapEventPlugin from "react-tap-event-plugin";
 
-const LOCAL_STORAGE_KEY = "employeeApp.employee";
+import "./App.css";
+import Form from "./Form";
+import Table from "./Table";
 
-function App() {
-  const [employees, setEmployees] = useState([
-    // { id: uuidv4(), name: "Jack Harper", position: "front end dev" },
-    // { id: uuidv4(), name: "Cindy Smith", position: "back end dev" },
-  ]);
-  const employeeNameRef = useRef();
+injectTapEventPlugin();
 
-  //store to local
-  useEffect(() => {
-    const storedEmployees = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY));
-    if (storedEmployees) setEmployees(storedEmployees);
-  }, []);
+class App extends Component {
+  state = {
+    data: [],
+    editIdx: -1
+  };
 
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(employees));
-  }, [employees]);
+  handleRemove = i => {
+    this.setState(state => ({
+      data: state.data.filter((row, j) => j !== i)
+    }));
+  };
 
-  function toggleEmployee(id) {
-    const newEmployees = [...employees];
-    const employee = newEmployees.find((employee) => employee.id === id);
-    employee.select = !employee.select;
-    setEmployees(newEmployees);
+
+  startEditing = i => {
+    this.setState({ editIdx: i});
+  };
+
+  stopEditing = i => {
+    this.setState({ editIdx: -1});
+  };
+
+  handleChange = (e, name, i) => {
+    const { value } = e.target;
+    this.setState(state => ({
+      data:state.data.map(
+        (row, j) => (j === i ? { ...row, [name]: value } : row)
+      )
+    }));
+  };
+
+  render() {
+    return (
+      <MuiThemeProvider>
+        <section classname="App">
+          <Form onSubmit={submission => this.setState({
+            data: [...this.state.data, submission]
+          })}
+          />
+          <Table 
+            handleRemove={this.handleRemove}
+            startEditing={this.startEditing}
+            editIdx={this.state.editIdx}
+            stopEditing={this.stopEditing}
+            handleChange={this.handleChange}
+            data={this.state.data}
+            header={[
+              {
+                name: "First name",
+                prop: "firstName"
+              },
+              {
+                name: "Last name",
+                prop: "lastName"
+              },
+              {
+                name: "occupation",
+                prop: "occupation"
+              },
+              {
+                name: "email",
+                prop: "email"
+              }
+            ]}
+          />
+        </section>
+      </MuiThemeProvider>
+    );
   }
-
-  function handleAddEmployee(e) {
-    const name = employeeNameRef.current.value;
-    if (name === " ") return;
-    setEmployees((prevEmployees) => {
-      return [...prevEmployees, { id: uuidv4(), name: name }];
-    });
-    console.log(name);
-    employeeNameRef.current.value = null;
-  }
-
-  function handleClearEmployee() {
-    const newEmployees = employees.filter((employee) => !employee.select);
-    setEmployees(newEmployees);
-  }
-
-  return (
-    <>
-      <EmployeeList employees={employees} toggleEmployee={toggleEmployee} />
-      <input ref={employeeNameRef} type="text" />
-      <button onClick={handleAddEmployee}>Add Employee</button>
-      <button onClick={handleClearEmployee}>clear</button>
-      <section>
-        {employees.filter((employee) => !employee.complete).length} employees
-      </section>
-    </>
-  );
 }
 
 export default App;
